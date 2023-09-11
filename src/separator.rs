@@ -88,6 +88,12 @@ pub struct HashToLevel {
     lvlup_bitmask: u64,
 }
 
+impl Default for HashToLevel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HashToLevel {
     pub fn new() -> HashToLevel {
         Self::custom_new(13, 3)
