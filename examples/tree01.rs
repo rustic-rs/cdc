@@ -13,6 +13,7 @@ fn get_new_hash_id() -> IntHash {
     }
 }
 
+#[allow(clippy::ptr_arg)]
 fn my_new_node(level: usize, children: &Vec<IntHash>) -> Node<IntHash> {
     Node {
         hash: get_new_hash_id(),
