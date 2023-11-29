@@ -1,17 +1,15 @@
 [package]
 name = "cdc"
 version = "0.1.0"
-license = "MIT"
-readme = "README.md"
-description = "A library for performing Content-Defined Chunking (CDC) on data streams."
-
 authors = ["Vincent Cantin <vincent.cantin@le-moulin-studio.com>"]
 homepage = "https://github.com/green-coder/cdc"
+license = "MIT"
+readme = "README.md"
 repository = "https://github.com/green-coder/cdc"
+rust-version = "1.60.0"
+description = "A library for performing Content-Defined Chunking (CDC) on data streams."
 
-exclude = [
-  "*.bin",
-]
+exclude = ["*.bin"]
 keywords = ["rabin", "cdc", "chunk", "merkle", "dedup"]
 
 [dependencies]
@@ -19,7 +17,7 @@ keywords = ["rabin", "cdc", "chunk", "merkle", "dedup"]
 [dev-dependencies]
 arrayref = "0.3.7"
 criterion = "0.5"
-ring = "0.16.20"
+ring = "0.17.6"
 
 [[bench]]
 name = "benchmarks"
