@@ -1,9 +1,18 @@
-# cdc
+<p align="center">
+<img src="https://raw.githubusercontent.com/rustic-rs/assets/main/logos/readme_header_cdc.png" height="400" />
+</p>
+<p align="center"><b>Library for fast, encrypted, and deduplicated backups</b></p>
+<p align="center">
+<a href="https://crates.io/crates/rustic_cdc"><img src="https://img.shields.io/crates/v/rustic_cdc.svg" /></a>
+<a href="https://docs.rs/rustic_cdc/"><img src="https://img.shields.io/docsrs/rustic_cdc?style=flat&amp;labelColor=1c1d42&amp;color=4f396a&amp;logo=Rust&amp;logoColor=white" /></a>
+<a href="https://github.com/rustic-rs/rustic_cdc/blob/main/"><img src="https://img.shields.io/badge/license-MIT-blue.svg" /></a>
+<a href="https://crates.io/crates/rustic_cdc"><img src="https://img.shields.io/crates/d/rustic_cdc.svg" /></a>
+<p>
+
+# About
 
 A library for performing *Content-Defined Chunking* (CDC) on data streams.
 Implemented using generic iterators, very easy to use.
-
-- [API Documentation](https://docs.rs/cdc/)
 
 ## Example
 
@@ -22,7 +31,9 @@ folder.
 
 To run them, use a command like:
 
-    cargo run --example separator --release
+```console
+cargo run --example separator --release
+```
 
 **Note:** Some examples are looking for a file named `myLargeFile.bin` which I
 didn't upload to Github. Please use your own files for testing.
@@ -67,6 +78,11 @@ terms of performance. Remember that when you test the lib, use
 
 I may try to improve the performance of the lib at some point, but for now it is
 good enough for most usages.
+
+## Credits
+
+This project is based on the awesome [cdc](https://crates.io/crates/cdc) crate
+by Vincent Cantin.
 
 ## License
 

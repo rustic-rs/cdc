@@ -1,23 +1,25 @@
 [package]
-name = "cdc"
-version = "0.1.0"
-authors = ["Vincent Cantin <vincent.cantin@le-moulin-studio.com>"]
-homepage = "https://github.com/green-coder/cdc"
+name = "rustic_cdc"
+version = "0.2.0"
+authors = [
+  "Vincent Cantin <vincent.cantin@le-moulin-studio.com>",
+  "the rustic-rs team",
+]
+edition = "2021"
+keywords = ["rabin", "cdc", "chunk", "merkle", "dedup"]
 license = "MIT"
+license-file = "LICENSE"
 readme = "README.md"
-repository = "https://github.com/green-coder/cdc"
+repository = "https://github.com/rustic-rs/cdc"
 rust-version = "1.60.0"
 description = "A library for performing Content-Defined Chunking (CDC) on data streams."
-
-exclude = ["*.bin"]
-keywords = ["rabin", "cdc", "chunk", "merkle", "dedup"]
 
 [dependencies]
 
 [dev-dependencies]
-arrayref = "0.3.7"
+arrayref = "0.3.9"
 criterion = "0.5"
-ring = "0.17.6"
+ring = "0.17.8"
 
 [[bench]]
 name = "benchmarks"

@@ -1,17 +1,25 @@
-// The irreductible polynom to be used in the fingerprint function.
+// The irreducible polynom to be used in the fingerprint function.
 pub trait Polynom {
+    /// The degree of the polynom.
     fn degree(&self) -> i32;
+
+    /// Returns the modulo of the polynom.
     fn modulo(&self, m: &Self) -> Self;
 }
 
+/// A 64 bit polynom.
 pub type Polynom64 = u64;
 
 impl Polynom for Polynom64 {
-    // The degree of the polynom.
+    /// The degree of the polynom.
+    // `self` is u64, so `self.leading_zeroes() <= 64` which
+    // fits perfectly into a `i32`. (@aawsome)
+    #[allow(clippy::cast_possible_wrap)]
     fn degree(&self) -> i32 {
         63 - self.leading_zeros() as i32
     }
 
+    /// Returns the modulo of the polynom.
     fn modulo(&self, m: &Self) -> Self {
         let mut p = *self;
         while p.degree() >= m.degree() {
@@ -24,7 +32,7 @@ impl Polynom for Polynom64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::*;
 
     #[test]
     fn polynom_degree() {

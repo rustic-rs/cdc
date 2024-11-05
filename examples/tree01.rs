@@ -1,6 +1,4 @@
-extern crate cdc;
-
-use cdc::*;
+use rustic_cdc::*;
 
 type IntHash = u32;
 

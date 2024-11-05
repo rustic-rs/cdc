@@ -1,4 +1,4 @@
-use super::Separator;
+use crate::Separator;
 
 pub struct Chunk {
     pub index: u64,

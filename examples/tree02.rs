@@ -1,6 +1,3 @@
-extern crate cdc;
-extern crate ring;
-
 #[macro_use]
 extern crate arrayref;
 
@@ -8,8 +5,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{self, BufReader, SeekFrom};
 
-use cdc::*;
 use ring::digest;
+use rustic_cdc::*;
 
 pub struct DigestReader<R> {
     inner: R,

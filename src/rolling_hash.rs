@@ -1,35 +1,72 @@
-use super::{Polynom, Polynom64};
+use crate::{Polynom, Polynom64};
 
+pub mod constants {
+    use crate::Polynom64;
+
+    /// Default irreducible modulo polynom.
+    pub const MOD_POLYNOM: Polynom64 = 0x3DA3358B4DC173;
+}
+
+/// A rolling hash implementation for 64 bit polynoms.
 pub trait RollingHash64 {
+    /// Resets the rolling hash.
     fn reset(&mut self);
+
+    /// Attempt to prefill the window
+    ///
+    /// # Arguments
+    ///
+    /// * `iter` - The iterator to read from.
     fn prefill_window<I>(&mut self, iter: &mut I) -> usize
     where
         I: Iterator<Item = u8>;
+
+    /// Combines a reset with a prefill in an optimized way.
+    ///
+    /// # Arguments
+    ///
+    /// * `iter` - The iterator to read from.
     fn reset_and_prefill_window<I>(&mut self, iter: &mut I) -> usize
     where
         I: Iterator<Item = u8>;
-    fn slide(&mut self, byte: &u8);
+
+    /// Slides the window by byte.
+    ///
+    /// # Arguments
+    ///
+    /// * `byte` - The byte to slide in.
+    fn slide(&mut self, byte: u8);
+
+    /// Returns the current hash as a `Polynom64`.
     fn get_hash(&self) -> &Polynom64;
 }
 
+/// A rolling hash implementation for 64 bit polynoms from Rabin.
+#[derive(Clone)]
 pub struct Rabin64 {
     // Configuration
+    /// Window size.
     window_size: usize, // The size of the data window used in the hash calculation.
+    /// Window size mask.
     window_size_mask: usize, // = window_size - 1, supposing that it is an exponent of 2.
 
     // Precalculations
+    /// The number of bits to shift the polynom to the left.
     polynom_shift: i32,
+
+    /// Precalculated out table.
     out_table: [Polynom64; 256],
+    /// Precalculated mod table.
     mod_table: [Polynom64; 256],
 
     // Current state
+    /// The data window.
     window_data: Vec<u8>,
+    /// The current window index.
     window_index: usize,
+    /// The current hash.
     pub hash: Polynom64,
 }
-
-// Default irreductible modulo polynom.
-pub const MOD_POLYNOM: Polynom64 = 0x3DA3358B4DC173;
 
 impl Rabin64 {
     pub fn calculate_out_table(window_size: usize, mod_polynom: &Polynom64) -> [Polynom64; 256] {
@@ -58,7 +95,7 @@ impl Rabin64 {
     }
 
     pub fn new(window_size_nb_bits: u32) -> Rabin64 {
-        Self::new_with_polynom(window_size_nb_bits, &MOD_POLYNOM)
+        Self::new_with_polynom(window_size_nb_bits, &constants::MOD_POLYNOM)
     }
 
     pub fn new_with_polynom(window_size_nb_bits: u32, mod_polynom: &Polynom64) -> Rabin64 {
@@ -108,7 +145,7 @@ impl RollingHash64 for Rabin64 {
         for _ in 0..self.window_size - 1 {
             match iter.next() {
                 Some(b) => {
-                    self.slide(&b);
+                    self.slide(b);
                     nb_bytes_read += 1;
                 }
                 None => break,
@@ -154,16 +191,16 @@ impl RollingHash64 for Rabin64 {
     }
 
     #[inline]
-    fn slide(&mut self, byte: &u8) {
+    fn slide(&mut self, byte: u8) {
         // Take the old value out of the window and the hash.
         let out_value = self.window_data[self.window_index];
         self.hash ^= self.out_table[out_value as usize];
 
         // Put the new value in the window and in the hash.
-        self.window_data[self.window_index] = *byte;
+        self.window_data[self.window_index] = byte;
         let mod_index = (self.hash >> self.polynom_shift) & 255;
         self.hash <<= 8;
-        self.hash |= *byte as Polynom64;
+        self.hash |= byte as Polynom64;
         self.hash ^= self.mod_table[mod_index as usize];
 
         // Move the windowIndex to the next position.
@@ -178,8 +215,8 @@ impl RollingHash64 for Rabin64 {
 
 #[cfg(test)]
 mod tests {
-    use super::super::polynom::Polynom64;
     use super::*;
+    use crate::polynom::Polynom64;
 
     fn to_hex_string(polynoms: &[Polynom64], prefix: &str) -> String {
         let strs: Vec<String> = polynoms
@@ -191,8 +228,8 @@ mod tests {
 
     #[test]
     fn print_tables() {
-        let out_table = Rabin64::calculate_out_table(32, &MOD_POLYNOM);
-        let mod_table = Rabin64::calculate_mod_table(&MOD_POLYNOM);
+        let out_table = Rabin64::calculate_out_table(32, &constants::MOD_POLYNOM);
+        let mod_table = Rabin64::calculate_mod_table(&constants::MOD_POLYNOM);
         println!("{}", to_hex_string(&out_table[..], "outTable "));
         println!("{}", to_hex_string(&mod_table[..], "modTable "));
     }
@@ -214,9 +251,9 @@ mod tests {
         for i in 0..data.len() {
             let block = &data[max(31, i) - 31..i + 1];
             rabin1.reset();
-            rabin1.hash_block(block, &MOD_POLYNOM);
+            rabin1.hash_block(block, &constants::MOD_POLYNOM);
 
-            rabin2.slide(&data[i]);
+            rabin2.slide(data[i]);
 
             //println!("{:02} {:02} {:016x} {:016x} {:?}", i, block.len(), rabin1.hash, rabin2.hash, block);
             assert_eq!(rabin1.hash, rabin2.hash);

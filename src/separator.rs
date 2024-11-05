@@ -1,4 +1,4 @@
-use super::{Rabin64, RollingHash64};
+use crate::{Rabin64, RollingHash64};
 
 pub struct Separator {
     pub index: u64,
@@ -62,7 +62,7 @@ where
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(byte) = self.iter.next() {
-            self.rabin.slide(&byte);
+            self.rabin.slide(byte);
             self.index += 1;
             if (self.predicate)(self.rabin.hash) {
                 let separator = Separator {
@@ -121,7 +121,7 @@ impl HashToLevel {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::*;
 
     #[test]
     fn hash_to_level() {
