@@ -1,16 +1,27 @@
-use std::cmp::{max, min};
+//! This example shows how to chunk a file using the `ChunkIter` iterator.
+
 use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::{
+    cmp::{max, min},
+    env::args,
+};
 
-use rustic_cdc::*;
+use rustic_cdc::{ChunkIter, SeparatorIter};
 
 #[inline]
 fn my_default_predicate(x: u64) -> bool {
-    (x & 0b1111111111111) == 0b1111111111111
+    (x & 0b1_1111_1111_1111) == 0b1_1111_1111_1111
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 fn chunk_file<S: Into<String>>(path: S) -> io::Result<()> {
     let f = File::open(path.into())?;
     let stream_length = f.metadata().unwrap().len();
@@ -36,7 +47,7 @@ fn chunk_file<S: Into<String>>(path: S) -> io::Result<()> {
         total_size += chunk.size;
         smallest_size = min(smallest_size, chunk.size);
         largest_size = max(largest_size, chunk.size);
-        size_variance += (chunk.size as i64 - expected_size as i64).pow(2);
+        size_variance += (chunk.size as i64 - i64::from(expected_size)).pow(2);
     }
 
     println!(
@@ -44,9 +55,9 @@ fn chunk_file<S: Into<String>>(path: S) -> io::Result<()> {
         nb_chunk,
         total_size / nb_chunk
     );
-    println!("Expected chunk size: {} bytes", expected_size);
-    println!("Smallest chunk: {} bytes.", smallest_size);
-    println!("Largest chunk: {} bytes.", largest_size);
+    println!("Expected chunk size: {expected_size} bytes");
+    println!("Smallest chunk: {smallest_size} bytes.");
+    println!("Largest chunk: {largest_size} bytes.");
     println!(
         "Standard size deviation: {} bytes.",
         (size_variance as f64 / nb_chunk as f64).sqrt() as u64
@@ -56,5 +67,9 @@ fn chunk_file<S: Into<String>>(path: S) -> io::Result<()> {
 }
 
 fn main() {
-    chunk_file("myLargeFile.bin").unwrap();
+    let path = args()
+        .nth(1)
+        .unwrap_or_else(|| "myLargeFile.bin".to_string());
+
+    chunk_file(path).unwrap();
 }

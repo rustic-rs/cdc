@@ -3,26 +3,47 @@
 
 #[derive(Debug)]
 pub struct HashedChunk<H> {
+    /// The hash of the chunk.
     pub hash: H,
+
+    /// The level of the chunk.
     pub level: usize,
 }
 
+/// A node in a tree.
 #[derive(Debug)]
 pub struct Node<H> {
-    pub hash: H, // The hash acting as the ID of this node.
+    /// The hash of the node.
+    ///
+    /// # Note
+    ///
+    /// The hash acting as the ID of this node.
+    pub hash: H,
+
+    /// The level of the node.
     pub level: usize,
+
+    /// The children of the node.
     pub children: Vec<H>,
 }
 
+/// An iterator that generates nodes from hashed chunks.
+#[derive(Debug)]
 pub struct NodeIter<I, F, H> {
-    // Configuration
+    /// The chunks to generate nodes from.
     chunks: I,
+
+    /// The function to create a new node.
     new_node: F,
+
+    /// The maximum number of children a node can have.
     max_children: usize,
 
-    // Internal state
+    /// The hashes at each level.
     level_hashes: Vec<Vec<H>>, // level_hashes[level] -> Vec<H>
-    out_buffer: Vec<Node<H>>,  // Fifo
+
+    /// The output buffer.
+    out_buffer: Vec<Node<H>>, // Fifo
 }
 
 impl<I, F, H> NodeIter<I, F, H>
@@ -31,8 +52,9 @@ where
     F: Fn(usize, &Vec<H>) -> Node<H>,
     H: Copy,
 {
-    pub fn new(iter: I, new_node: F, max_node_children: usize) -> NodeIter<I, F, H> {
-        NodeIter {
+    /// Creates a new `NodeIter`.
+    pub fn new(iter: I, new_node: F, max_node_children: usize) -> Self {
+        Self {
             chunks: iter,
             new_node,
             max_children: max_node_children,
@@ -41,6 +63,12 @@ where
         }
     }
 
+    /// Adds a hash at a specific level.
+    ///
+    /// # Arguments
+    ///
+    /// * `level` - The level to add the hash at.
+    /// * `hash` - The hash to add.
     fn add_at_level(&mut self, level: usize, hash: H) {
         // Ensures that the vector is large enough.
         if level >= self.level_hashes.len() {
@@ -55,6 +83,11 @@ where
         }
     }
 
+    /// Outputs a level.
+    ///
+    /// # Arguments
+    ///
+    /// * `level` - The level to output.
     fn output_level(&mut self, level: usize) {
         match self.level_hashes[level].len() {
             0 => {} // Don't output empty nodes.
@@ -74,6 +107,11 @@ where
         }
     }
 
+    /// Outputs levels below a specific level.
+    ///
+    /// # Arguments
+    ///
+    /// * `below_level` - The level to output below.
     fn output_levels(&mut self, below_level: usize) {
         for level in 0..below_level {
             self.output_level(level);

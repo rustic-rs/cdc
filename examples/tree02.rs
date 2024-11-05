@@ -1,21 +1,48 @@
+//! This example shows how to build a tree of hash nodes from a file.
+
 #[macro_use]
 extern crate arrayref;
 
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::{self, BufReader, SeekFrom};
+use std::{
+    env::args,
+    fmt::{self, Debug, Formatter},
+    fs::File,
+    io::{
+        self,
+        prelude::{Read, Seek},
+        BufReader, SeekFrom,
+    },
+};
 
 use ring::digest;
-use rustic_cdc::*;
+use rustic_cdc::{Chunk, ChunkIter, HashToLevel, HashedChunk, Node, NodeIter, SeparatorIter};
 
+type Hash256 = [u8; 256 / 8];
+
+/// A reader that calculates the digest of the data read.
 pub struct DigestReader<R> {
+    /// The inner reader.
     inner: R,
+
+    /// The digest context.
     pub digest: digest::Context,
 }
 
+impl<R> Debug for DigestReader<R> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "DigestReader")
+    }
+}
+
 impl<R: Read> DigestReader<R> {
-    pub fn new(inner: R, digest: digest::Context) -> DigestReader<R> {
-        DigestReader { inner, digest }
+    /// Creates a new `DigestReader`.
+    ///
+    /// # Arguments
+    ///
+    /// * `inner` - The inner reader.
+    /// * `digest` - The digest context.
+    pub fn new(inner: R, digest: digest::Context) -> Self {
+        Self { inner, digest }
     }
 }
 
@@ -27,13 +54,16 @@ impl<R: Read> Read for DigestReader<R> {
     }
 }
 
-fn file_chunk_reader(path: &String, chunk: &Chunk) -> io::Result<io::Take<BufReader<File>>> {
-    let mut file = File::open(path)?;
-    file.seek(SeekFrom::Start(chunk.index))?;
+fn file_chunk_reader<S: Into<String>>(
+    path: S,
+    chunk: &Chunk,
+) -> io::Result<io::Take<BufReader<File>>> {
+    let mut file = File::open(path.into())?;
+
+    _ = file.seek(SeekFrom::Start(chunk.index))?;
+
     Ok(BufReader::new(file).take(chunk.size))
 }
-
-type Hash256 = [u8; 256 / 8];
 
 fn new_hash_node(level: usize, children: &Vec<Hash256>) -> Node<Hash256> {
     let mut ctx = digest::Context::new(&digest::SHA256);
@@ -51,9 +81,10 @@ fn new_hash_node(level: usize, children: &Vec<Hash256>) -> Node<Hash256> {
     }
 }
 
-fn chunk_file(path: &String) -> io::Result<()> {
+fn chunk_file<S: Into<String>>(path: S) -> io::Result<()> {
+    let path = path.into();
     // Opens the file and gets the byte_iter.
-    let f = File::open(path)?;
+    let f = File::open(path.clone())?;
     let stream_length = f.metadata().unwrap().len();
     let reader: BufReader<File> = BufReader::new(f);
     let byte_iter = reader.bytes().map(|b| b.unwrap());
@@ -67,11 +98,11 @@ fn chunk_file(path: &String) -> io::Result<()> {
     // Converts into hashed chunks.
     let hashed_chunk_iter = chunk_iter.map(|chunk| {
         // Calculates the sha256 of the chunks.
-        let chunk_reader = file_chunk_reader(path, &chunk).unwrap();
+        let chunk_reader = file_chunk_reader(path.clone(), &chunk).unwrap();
         let mut digest_reader =
             DigestReader::new(chunk_reader, digest::Context::new(&digest::SHA256));
         digest_reader.digest.update(&[0u8]); // To mark that it is a chunk, not a node.
-        io::copy(&mut digest_reader, &mut io::sink()).unwrap();
+        _ = io::copy(&mut digest_reader, &mut io::sink()).unwrap();
         let digest = digest_reader.digest.finish();
         let hash: Hash256 = *array_ref![digest.as_ref(), 0, 256 / 8];
 
@@ -99,13 +130,17 @@ fn chunk_file(path: &String) -> io::Result<()> {
         }
         level_counts[node.level] += 1;
     }
-    println!("Total number of nodes: {}.", nb_nodes);
+    println!("Total number of nodes: {nb_nodes}.");
     println!("Average number of children: {}.", total_children / nb_nodes);
-    println!("Level counts: {:?}.", level_counts);
+    println!("Level counts: {level_counts:?}.");
 
     Ok(())
 }
 
 fn main() {
-    chunk_file(&"myLargeFile.bin".to_owned()).unwrap();
+    let path = args()
+        .nth(1)
+        .unwrap_or_else(|| "myLargeFile.bin".to_string());
+
+    chunk_file(path).unwrap();
 }

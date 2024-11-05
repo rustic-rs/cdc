@@ -1,3 +1,5 @@
+//! This crate provides a set of tools to work with Content Defined Chunking (CDC) algorithms.
+
 mod chunk;
 mod polynom;
 mod rolling_hash;

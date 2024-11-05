@@ -1,9 +1,10 @@
-// The irreducible polynom to be used in the fingerprint function.
+/// The irreducible polynom to be used in the fingerprint function.
 pub trait Polynom {
     /// The degree of the polynom.
     fn degree(&self) -> i32;
 
     /// Returns the modulo of the polynom.
+    #[must_use]
     fn modulo(&self, m: &Self) -> Self;
 }
 

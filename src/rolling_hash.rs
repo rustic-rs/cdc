@@ -4,7 +4,7 @@ pub mod constants {
     use crate::Polynom64;
 
     /// Default irreducible modulo polynom.
-    pub const MOD_POLYNOM: Polynom64 = 0x3DA3358B4DC173;
+    pub const MOD_POLYNOM: Polynom64 = 0x003D_A335_8B4D_C173;
 }
 
 /// A rolling hash implementation for 64 bit polynoms.
@@ -42,7 +42,7 @@ pub trait RollingHash64 {
 }
 
 /// A rolling hash implementation for 64 bit polynoms from Rabin.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Rabin64 {
     // Configuration
     /// Window size.
@@ -69,6 +69,8 @@ pub struct Rabin64 {
 }
 
 impl Rabin64 {
+    /// Calculates the out table. The out table is used to remove the byte that is sliding out of the window.
+    #[must_use]
     pub fn calculate_out_table(window_size: usize, mod_polynom: &Polynom64) -> [Polynom64; 256] {
         let mut out_table = [0; 256];
         for (b, elem) in out_table.iter_mut().enumerate() {
@@ -83,6 +85,8 @@ impl Rabin64 {
         out_table
     }
 
+    /// Calculates the mod table. The mod table is used to add the byte that is sliding into the window.
+    #[must_use]
     pub fn calculate_mod_table(mod_polynom: &Polynom64) -> [Polynom64; 256] {
         let mut mod_table = [0; 256];
         let k = mod_polynom.degree();
@@ -94,16 +98,25 @@ impl Rabin64 {
         mod_table
     }
 
-    pub fn new(window_size_nb_bits: u32) -> Rabin64 {
+    /// Creates a new `Rabin64` rolling hash.
+    #[must_use]
+    pub fn new(window_size_nb_bits: u32) -> Self {
         Self::new_with_polynom(window_size_nb_bits, &constants::MOD_POLYNOM)
     }
 
-    pub fn new_with_polynom(window_size_nb_bits: u32, mod_polynom: &Polynom64) -> Rabin64 {
+    /// Creates a new `Rabin64` rolling hash with a specific modulo polynom.
+    ///
+    /// # Arguments
+    ///
+    /// * `window_size_nb_bits` - The number of bits of the window size.
+    /// * `mod_polynom` - The modulo polynom.
+    #[must_use]
+    pub fn new_with_polynom(window_size_nb_bits: u32, mod_polynom: &Polynom64) -> Self {
         let window_size = 1 << window_size_nb_bits;
 
         let window_data = vec![0; window_size];
 
-        Rabin64 {
+        Self {
             window_size,
             window_size_mask: window_size - 1,
             polynom_shift: mod_polynom.degree() - 8,
@@ -116,11 +129,11 @@ impl Rabin64 {
     }
 
     #[cfg(test)]
-    pub fn hash_block(&mut self, bytes: &[u8], mod_polynom: &Polynom64) {
+    pub(crate) fn hash_block(&mut self, bytes: &[u8], mod_polynom: Polynom64) {
         for v in bytes {
             self.hash <<= 8;
-            self.hash |= *v as Polynom64;
-            self.hash = self.hash.modulo(mod_polynom);
+            self.hash |= Polynom64::from(*v);
+            self.hash = self.hash.modulo(&mod_polynom);
         }
     }
 }
@@ -172,7 +185,7 @@ impl RollingHash64 for Rabin64 {
                     self.window_data[self.window_index] = b;
                     let mod_index = (self.hash >> self.polynom_shift) & 255;
                     self.hash <<= 8;
-                    self.hash |= b as Polynom64;
+                    self.hash |= Polynom64::from(b);
                     self.hash ^= self.mod_table[mod_index as usize];
 
                     // Move the windowIndex to the next position.
@@ -200,7 +213,7 @@ impl RollingHash64 for Rabin64 {
         self.window_data[self.window_index] = byte;
         let mod_index = (self.hash >> self.polynom_shift) & 255;
         self.hash <<= 8;
-        self.hash |= byte as Polynom64;
+        self.hash |= Polynom64::from(byte);
         self.hash ^= self.mod_table[mod_index as usize];
 
         // Move the windowIndex to the next position.
@@ -249,9 +262,9 @@ mod tests {
 
         // Block by block, no optimization, used raw modulo formula.
         for i in 0..data.len() {
-            let block = &data[max(31, i) - 31..i + 1];
+            let block = &data[(max(31, i) - 31)..=i];
             rabin1.reset();
-            rabin1.hash_block(block, &constants::MOD_POLYNOM);
+            rabin1.hash_block(block, constants::MOD_POLYNOM);
 
             rabin2.slide(data[i]);
 

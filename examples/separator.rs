@@ -1,9 +1,12 @@
-use std::fs::File;
-use std::io;
-use std::io::prelude::*;
-use std::io::BufReader;
+//! This example shows how to use the `SeparatorIter` to find the separators in a file.
 
-use rustic_cdc::*;
+use std::{
+    env::args,
+    fs::File,
+    io::{self, prelude::Read, BufReader},
+};
+
+use rustic_cdc::SeparatorIter;
 
 fn chunk_file<S: Into<String>>(path: S) -> io::Result<()> {
     let f = File::open(path.into())?;
@@ -15,11 +18,15 @@ fn chunk_file<S: Into<String>>(path: S) -> io::Result<()> {
         println!("Index: {}, hash: {:016x}", separator.index, separator.hash);
         nb_separator += 1;
     }
-    println!("We found {} separators.", nb_separator);
+    println!("We found {nb_separator} separators.");
 
     Ok(())
 }
 
 fn main() {
-    chunk_file("myLargeFile.bin").unwrap();
+    let path = args()
+        .nth(1)
+        .unwrap_or_else(|| "myLargeFile.bin".to_string());
+    
+    chunk_file(path).unwrap();
 }
