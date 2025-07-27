@@ -52,7 +52,7 @@ pub struct Rabin64 {
 
     // Precalculations
     /// The number of bits to shift the polynom to the left.
-    polynom_shift: i32,
+    polynom_shift: usize,
 
     /// Precalculated out table.
     out_table: [Polynom64; 256],
@@ -119,7 +119,7 @@ impl Rabin64 {
         Self {
             window_size,
             window_size_mask: window_size - 1,
-            polynom_shift: mod_polynom.degree() - 8,
+            polynom_shift: (mod_polynom.degree() - 8) as usize,
             out_table: Self::calculate_out_table(window_size, mod_polynom),
             mod_table: Self::calculate_mod_table(mod_polynom),
             window_data,
